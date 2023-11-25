@@ -94,31 +94,34 @@ const ThreeCanvas = () => {
     // Animation Loop
     const animate = () => {
       requestAnimationFrame(animate);
-
+    
       // Update Controls
       controls.update();
-
+    
       // Handle Key Presses to Move Camera
       const speed = 0.05;
       if (keyPressRef.current.forward) {
-        camera.position.z -= speed;
+        camera.translateZ(-speed);
       }
       if (keyPressRef.current.backward) {
-        camera.position.z += speed;
+        camera.translateZ(speed);
       }
       if (keyPressRef.current.left) {
-        camera.position.x -= speed;
+        camera.translateX(-speed);
       }
       if (keyPressRef.current.right) {
-        camera.position.x += speed;
+        camera.translateX(speed);
       }
-
+    
+      // Update the target of the camera controls
+      controls.target.copy(camera.position).add(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(10));
+    
       cube.rotation.x += 0.01;
       cube.rotation.y += 0.01;
-
+    
       sphere.rotation.x += 0.01;
       sphere.rotation.y += 0.01;
-
+    
       renderer.render(scene, camera);
     };
 
