@@ -165,7 +165,13 @@ const ThreeCanvas = () => {
     };
   }, []); // Empty dependency array to ensure useEffect runs only once
 
-  return <div ref={canvasRef}></div>;
+  return (
+    <div>
+      <div ref={canvasRef}></div>
+      {/* Cursor element styled with Tailwind CSS */}
+      <div className="absolute top-1/2 left-1/2 w-2 h-2 bg-white transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+    </div>
+  )
 };
 
 export default ThreeCanvas;
