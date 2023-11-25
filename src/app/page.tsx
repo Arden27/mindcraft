@@ -9,10 +9,7 @@ const ThreeCanvasWithNoSSR = dynamic(
 
 const GamePage = () => {
   return (
-    <div>
-      <h1>My 3D Game</h1>
-      <ThreeCanvasWithNoSSR />
-    </div>
+    <ThreeCanvasWithNoSSR />
   );
 };
 

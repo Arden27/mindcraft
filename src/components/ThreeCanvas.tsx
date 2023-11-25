@@ -1,19 +1,29 @@
-'use client'
+"use client";
 
 // components/ThreeCanvas.tsx
 
-import { useEffect, useRef } from 'react';
-import * as THREE from 'three';
-import { OrbitControls } from '@three-ts/orbit-controls';
+import { useEffect, useRef } from "react";
+import * as THREE from "three";
+import { PointerLockControls } from "three/addons/controls/PointerLockControls.js";
 
 const ThreeCanvas = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
-  const keyPressRef = useRef({ forward: false, backward: false, left: false, right: false });
+  const keyPressRef = useRef({
+    forward: false,
+    backward: false,
+    left: false,
+    right: false,
+  });
 
   useEffect(() => {
     // Scene Setup
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000,
+    );
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
 
@@ -23,7 +33,10 @@ const ThreeCanvas = () => {
 
     // Adding a Plane (Ground)
     const planeGeometry = new THREE.PlaneGeometry(100, 100, 32, 32);
-    const planeMaterial = new THREE.MeshBasicMaterial({ color: 0x555555, side: THREE.DoubleSide });
+    const planeMaterial = new THREE.MeshBasicMaterial({
+      color: 0x555555,
+      side: THREE.DoubleSide,
+    });
     const plane = new THREE.Mesh(planeGeometry, planeMaterial);
     plane.rotation.x = -Math.PI / 2;
     scene.add(plane);
@@ -45,22 +58,28 @@ const ThreeCanvas = () => {
     camera.position.z = 5;
 
     // Camera Controls
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 0, 0);
+    const controls = new PointerLockControls(camera, document.body);
+
+    // Event to lock pointer and enable controls
+    const enableControls = () => {
+      controls.lock();
+    };
+
+    canvasRef.current?.addEventListener("click", enableControls);
 
     // Key Down Event
     const onKeyDown = (event: KeyboardEvent) => {
       switch (event.code) {
-        case 'KeyW':
+        case "KeyW":
           keyPressRef.current.forward = true;
           break;
-        case 'KeyS':
+        case "KeyS":
           keyPressRef.current.backward = true;
           break;
-        case 'KeyA':
+        case "KeyA":
           keyPressRef.current.left = true;
           break;
-        case 'KeyD':
+        case "KeyD":
           keyPressRef.current.right = true;
           break;
         default:
@@ -71,16 +90,16 @@ const ThreeCanvas = () => {
     // Key Up Event
     const onKeyUp = (event: KeyboardEvent) => {
       switch (event.code) {
-        case 'KeyW':
+        case "KeyW":
           keyPressRef.current.forward = false;
           break;
-        case 'KeyS':
+        case "KeyS":
           keyPressRef.current.backward = false;
           break;
-        case 'KeyA':
+        case "KeyA":
           keyPressRef.current.left = false;
           break;
-        case 'KeyD':
+        case "KeyD":
           keyPressRef.current.right = false;
           break;
         default:
@@ -88,44 +107,41 @@ const ThreeCanvas = () => {
       }
     };
 
-    document.addEventListener('keydown', onKeyDown);
-    document.addEventListener('keyup', onKeyUp);
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("keyup", onKeyUp);
 
+    // Animation Loop
     // Animation Loop
     const animate = () => {
       requestAnimationFrame(animate);
-    
-      // Update Controls
-      controls.update();
-    
-      // Handle Key Presses to Move Camera
-      const speed = 0.05;
-      if (keyPressRef.current.forward) {
-        camera.translateZ(-speed);
+
+      if (controls.isLocked === true) {
+        const speed = 0.05;
+        if (keyPressRef.current.forward) {
+          camera.translateZ(-speed);
+        }
+        if (keyPressRef.current.backward) {
+          camera.translateZ(speed);
+        }
+        if (keyPressRef.current.left) {
+          camera.translateX(-speed);
+        }
+        if (keyPressRef.current.right) {
+          camera.translateX(speed);
+        }
       }
-      if (keyPressRef.current.backward) {
-        camera.translateZ(speed);
-      }
-      if (keyPressRef.current.left) {
-        camera.translateX(-speed);
-      }
-      if (keyPressRef.current.right) {
-        camera.translateX(speed);
-      }
-    
-      // Update the target of the camera controls
-      controls.target.copy(camera.position).add(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(10));
-    
+
+      // Removed controls.update() as it's not needed for PointerLockControls
+
       cube.rotation.x += 0.01;
       cube.rotation.y += 0.01;
-    
+
       sphere.rotation.x += 0.01;
       sphere.rotation.y += 0.01;
-    
+
       renderer.render(scene, camera);
     };
 
-    // Start the Animation
     animate();
 
     // Handle Browser Resizing
@@ -135,14 +151,15 @@ const ThreeCanvas = () => {
       renderer.setSize(window.innerWidth, window.innerHeight);
     };
 
-    window.addEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
 
     // Cleanup
     return () => {
-      window.removeEventListener('resize', handleResize);
-      document.removeEventListener('keydown', onKeyDown);
-      document.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener("resize", handleResize);
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("keyup", onKeyUp);
       if (canvasRef.current) {
+        canvasRef.current.removeEventListener("click", enableControls);
         canvasRef.current.removeChild(renderer.domElement);
       }
     };
