@@ -6,6 +6,20 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { PointerLockControls } from "three/addons/controls/PointerLockControls.js";
 
+class World extends THREE.Scene {
+  constructor() {
+    super();
+  }
+
+  addBlock(blockType: number, x: number, y: number, z: number) {
+    const cubeGeometry = new THREE.BoxGeometry();
+    const cubeMaterial = new THREE.MeshBasicMaterial({ color: blockType });
+    const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+    cube.position.set(x + 0.5, y + 0.5, z + 0.5);
+    this.add(cube);
+  }
+}
+
 const ThreeCanvas = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const keyPressRef = useRef({
@@ -17,7 +31,7 @@ const ThreeCanvas = () => {
 
   useEffect(() => {
     // Scene Setup
-    const scene = new THREE.Scene();
+    const world = new World();
     const camera = new THREE.PerspectiveCamera(
       75,
       window.innerWidth / window.innerHeight,
@@ -31,29 +45,32 @@ const ThreeCanvas = () => {
       canvasRef.current.appendChild(renderer.domElement);
     }
 
-    // Adding a Plane (Ground)
-    const planeGeometry = new THREE.PlaneGeometry(100, 100, 32, 32);
-    const planeMaterial = new THREE.MeshBasicMaterial({
-      color: 0x555555,
-      side: THREE.DoubleSide,
-    });
-    const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-    plane.rotation.x = -Math.PI / 2;
-    scene.add(plane);
+    for (let x = 0; x < 10; x++) {
+      for (let z = 0; z < 10; z++) {
+        world.addBlock(0x555555, x - 5, 0, z - 5); // Grey color
+      }
+    }
 
-    // Adding a Cube
-    const cubeGeometry = new THREE.BoxGeometry();
+    world.addBlock(0x0000ff, 1, 1, 1);
+
+    const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
     const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
     const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-    cube.position.set(0, 0.5, 0);
-    scene.add(cube);
 
-    // Adding a Sphere
-    const sphereGeometry = new THREE.SphereGeometry(0.5, 32, 32);
-    const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-    sphere.position.set(2, 0.5, 0);
-    scene.add(sphere);
+    // Create wireframe
+    const wireframeGeometry = new THREE.WireframeGeometry(cubeGeometry);
+    const wireframeMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+    const wireframe = new THREE.LineSegments(
+      wireframeGeometry,
+      wireframeMaterial,
+    );
+
+    // Add wireframe to the cube
+    cube.add(wireframe);
+
+    cube.position.set(3.5, 3.5, 3.5);
+
+    world.add(cube)
 
     camera.position.z = 5;
 
@@ -111,7 +128,6 @@ const ThreeCanvas = () => {
     document.addEventListener("keyup", onKeyUp);
 
     // Animation Loop
-    // Animation Loop
     const animate = () => {
       requestAnimationFrame(animate);
 
@@ -131,15 +147,7 @@ const ThreeCanvas = () => {
         }
       }
 
-      // Removed controls.update() as it's not needed for PointerLockControls
-
-      cube.rotation.x += 0.01;
-      cube.rotation.y += 0.01;
-
-      sphere.rotation.x += 0.01;
-      sphere.rotation.y += 0.01;
-
-      renderer.render(scene, camera);
+      renderer.render(world, camera);
     };
 
     animate();
@@ -169,9 +177,9 @@ const ThreeCanvas = () => {
     <div>
       <div ref={canvasRef}></div>
       {/* Cursor element styled with Tailwind CSS */}
-      <div className="absolute top-1/2 left-1/2 w-2 h-2 bg-white transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 transform bg-white"></div>
     </div>
-  )
+  );
 };
 
 export default ThreeCanvas;
