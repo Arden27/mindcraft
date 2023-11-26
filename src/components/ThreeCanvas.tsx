@@ -19,16 +19,20 @@ class World extends THREE.Scene {
       y < 0 ? y + 0.5 : y - 0.5,
       z < 0 ? z + 0.5 : z - 0.5,
     );
+    cube.userData.isBlock = true;
     this.add(cube);
   }
 }
 
 class Outline extends THREE.LineSegments {
-  isOutline: boolean;
+  //isOutline: boolean;
 
-  constructor(geometry: THREE.EdgesGeometry, material: THREE.LineBasicMaterial) {
+  constructor(
+    geometry: THREE.EdgesGeometry,
+    material: THREE.LineBasicMaterial,
+  ) {
     super(geometry, material);
-    this.isOutline = true; // Custom property to identify outlines
+    //this.isOutline = true; // Custom property to identify outlines
   }
 }
 
@@ -83,7 +87,6 @@ const ThreeCanvas = () => {
 
     window.addEventListener("mousemove", onMouseMove, false);
 
-
     const handleKeyDown = (event: KeyboardEvent) => {
       switch (event.code) {
         case "KeyW":
@@ -99,7 +102,7 @@ const ThreeCanvas = () => {
           keyPressRef.current.right = true;
           break;
       }
-    }
+    };
 
     document.addEventListener("keydown", handleKeyDown);
 
@@ -118,9 +121,53 @@ const ThreeCanvas = () => {
           keyPressRef.current.right = false;
           break;
       }
-    }
+    };
 
     document.addEventListener("keyup", handleKeyUp);
+
+    // Function to handle block removal
+    const onDocumentMouseDown = (event: MouseEvent) => {
+      console.log("onDocumentMouseDown triggered"); // Ensure this is logged
+
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(world.children, true);
+
+      console.log(intersects); // Log all intersections to inspect them
+
+      const filteredIntersects = intersects.filter(
+        (intersect) => !(intersect.object instanceof Outline),
+      );
+
+      console.log("filteredIntersects", filteredIntersects); // Log filtered intersections
+
+      if (filteredIntersects.length > 0) {
+        const intersectedObject = filteredIntersects[0].object as THREE.Mesh;
+        console.log("intersectedObject", intersectedObject); // Log the intersected object
+
+        // Check if the intersected object is a block
+        if (intersectedObject.userData.isBlock) {
+          console.log("Block should be removed"); // Check if this is logged
+
+          // Remove the block from the scene
+          world.remove(intersectedObject);
+
+          // Dispose of the block's geometry and material
+          intersectedObject.geometry.dispose();
+          if (Array.isArray(intersectedObject.material)) {
+            intersectedObject.material.forEach((material) =>
+              material.dispose(),
+            );
+          } else {
+            intersectedObject.material.dispose();
+          }
+        }
+      }
+    };
+
+    document.addEventListener("mousedown", onDocumentMouseDown);
 
     let highlightedBlock: THREE.Mesh | null = null;
     const outlineMaterial = new THREE.LineBasicMaterial({ color: 0xffff00 });
@@ -132,16 +179,18 @@ const ThreeCanvas = () => {
 
     const animate = () => {
       requestAnimationFrame(animate);
-    
+
       raycaster.setFromCamera(mouse, camera);
       const intersects = raycaster.intersectObjects(world.children, true);
-    
+
       // Filter out any outlines from the intersects array
-      const filteredIntersects = intersects.filter(intersect => !(intersect.object instanceof Outline));
-    
+      const filteredIntersects = intersects.filter(
+        (intersect) => !(intersect.object instanceof Outline),
+      );
+
       if (filteredIntersects.length > 0) {
         const intersectedObject = filteredIntersects[0].object as THREE.Mesh;
-    
+
         if (lastIntersectedObject !== intersectedObject) {
           if (lastIntersectedObject) {
             removeOutline(lastIntersectedObject);
@@ -149,7 +198,7 @@ const ThreeCanvas = () => {
           addOutline(intersectedObject);
           lastIntersectedObject = intersectedObject;
         }
-    
+
         setBlockCoords({
           x: intersectedObject.position.x.toFixed(2),
           y: intersectedObject.position.y.toFixed(2),
@@ -159,7 +208,7 @@ const ThreeCanvas = () => {
         removeOutline(lastIntersectedObject);
         lastIntersectedObject = null;
       }
-    
+
       if (controls.isLocked) {
         const speed = 0.05;
         if (keyPressRef.current.forward) camera.translateZ(-speed);
@@ -167,13 +216,13 @@ const ThreeCanvas = () => {
         if (keyPressRef.current.left) camera.translateX(-speed);
         if (keyPressRef.current.right) camera.translateX(speed);
       }
-    
+
       setObserverCoords({
         x: camera.position.x.toFixed(2),
         y: camera.position.y.toFixed(2),
         z: camera.position.z.toFixed(2),
       });
-    
+
       renderer.render(world, camera);
     };
 
@@ -182,7 +231,7 @@ const ThreeCanvas = () => {
       outline.name = "outline";
       object.add(outline);
     };
-    
+
     const removeOutline = (object: THREE.Mesh) => {
       const outline = object.getObjectByName("outline");
       if (outline) object.remove(outline);
@@ -194,7 +243,7 @@ const ThreeCanvas = () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
-    }
+    };
 
     window.addEventListener("resize", handleResize);
 
@@ -204,7 +253,8 @@ const ThreeCanvas = () => {
       window.removeEventListener("resize", handleResize);
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("keyup", handleKeyUp);
-    
+      document.removeEventListener("mousedown", onDocumentMouseDown);
+
       // Dispose of scene objects and materials to free up memory
       world.children.forEach((child) => {
         if (child instanceof THREE.Mesh) {
@@ -216,7 +266,7 @@ const ThreeCanvas = () => {
           }
         }
       });
-    
+
       // Remove the renderer's DOM element
       if (canvasRef.current) {
         canvasRef.current.removeChild(renderer.domElement);
