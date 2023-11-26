@@ -20,12 +20,13 @@ class World extends THREE.Scene {
       z < 0 ? z + 0.5 : z - 0.5
     );
     this.add(cube);
-}
+  }
 }
 
 const ThreeCanvas = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [observerCoords, setObserverCoords] = useState({ x: "0", y: "0", z: "0" });
+  const [blockCoords, setBlockCoords] = useState({ x: "0", y: "0", z: "0" });
   const keyPressRef = useRef({
     forward: false,
     backward: false,
@@ -51,10 +52,20 @@ const ThreeCanvas = () => {
       }
     }
 
-    world.addBlock(0x0000ff, 1, 1, 1)
+    world.addBlock(0x0000ff, 1, 1, 1);
 
     const controls = new PointerLockControls(camera, document.body);
     canvasRef.current?.addEventListener("click", () => controls.lock());
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    const onMouseMove = (event: MouseEvent) => {
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    };
+
+    window.addEventListener('mousemove', onMouseMove, false);
 
     document.addEventListener("keydown", (event) => {
       switch (event.code) {
@@ -76,6 +87,19 @@ const ThreeCanvas = () => {
 
     const animate = () => {
       requestAnimationFrame(animate);
+
+      // Raycasting to find pointed block
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(world.children);
+      if (intersects.length > 0) {
+        const intersectedObject = intersects[0].object;
+        setBlockCoords({
+          x: intersectedObject.position.x.toFixed(2),
+          y: intersectedObject.position.y.toFixed(2),
+          z: intersectedObject.position.z.toFixed(2),
+        });
+      }
+
       if (controls.isLocked) {
         const speed = 0.05;
         if (keyPressRef.current.forward) camera.translateZ(-speed);
@@ -103,6 +127,7 @@ const ThreeCanvas = () => {
     });
 
     return () => {
+      window.removeEventListener('mousemove', onMouseMove, false);
       window.removeEventListener("resize", () => {});
       document.removeEventListener("keydown", () => {});
       document.removeEventListener("keyup", () => {});
@@ -115,10 +140,13 @@ const ThreeCanvas = () => {
   return (
     <div>
       <div ref={canvasRef}></div>
-      <div className="pointer-events-none absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 transform bg-white"></div>
       <div className="absolute top-0 left-0 m-4 text-white">
         Observer: x: {observerCoords.x}, y: {observerCoords.y}, z: {observerCoords.z}
       </div>
+      <div className="absolute top-0 right-0 m-4 text-white">
+        Pointing at block: x: {blockCoords.x}, y: {blockCoords.y}, z: {blockCoords.z}
+      </div>
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 transform bg-white"></div>
     </div>
   );
 };
