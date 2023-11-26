@@ -148,7 +148,7 @@ const ThreeCanvas = () => {
         console.log("intersectedObject", intersectedObject); // Log the intersected object
 
         // Check if the intersected object is a block
-        if (intersectedObject.userData.isBlock) {
+        if (event.button === 0 && intersectedObject.userData.isBlock) {
           console.log("Block should be removed"); // Check if this is logged
 
           // Remove the block from the scene
@@ -164,10 +164,51 @@ const ThreeCanvas = () => {
             intersectedObject.material.dispose();
           }
         }
+
+        if (event.button === 2) {
+          // Calculate the mouse position
+          mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+          mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+          // Perform raycasting
+          raycaster.setFromCamera(mouse, camera);
+          const intersects = raycaster.intersectObjects(world.children, true);
+
+          const filteredIntersects = intersects.filter(
+            (intersect) => !(intersect.object instanceof Outline),
+          );
+
+          if (filteredIntersects.length > 0 && filteredIntersects[0].face) {
+            const intersectedObject = filteredIntersects[0]
+              .object as THREE.Mesh;
+            const faceNormal = filteredIntersects[0].face?.normal
+              .clone()
+              .normalize(); // Use optional chaining with ?. and clone the normal vector
+
+            // Ensure faceNormal exists before attempting to use it
+            if (faceNormal) {
+              const adjacentPosition = intersectedObject.position
+                .clone()
+                .addScaledVector(faceNormal, 1); // Adjust the vector scale as needed
+              world.addBlock(
+                0x00ff00,
+                adjacentPosition.x > 0 ? adjacentPosition.x + 0.5 : adjacentPosition.x - 0.5,
+                adjacentPosition.y > 0 ? adjacentPosition.y + 0.5 : adjacentPosition.y - 0.5,
+                adjacentPosition.z > 0 ? adjacentPosition.z + 0.5 : adjacentPosition.z - 0.5,
+              );
+            }
+          }
+        }
       }
     };
 
     document.addEventListener("mousedown", onDocumentMouseDown);
+
+    const onDocumentRightClick = (event: MouseEvent) => {
+      event.preventDefault();
+    }
+    // Add event listener for right-click
+    document.addEventListener("contextmenu", onDocumentRightClick);
 
     let highlightedBlock: THREE.Mesh | null = null;
     const outlineMaterial = new THREE.LineBasicMaterial({ color: 0xffff00 });
@@ -254,6 +295,7 @@ const ThreeCanvas = () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("keyup", handleKeyUp);
       document.removeEventListener("mousedown", onDocumentMouseDown);
+      document.removeEventListener('contextmenu', onDocumentRightClick);
 
       // Dispose of scene objects and materials to free up memory
       world.children.forEach((child) => {
