@@ -83,7 +83,8 @@ const ThreeCanvas = () => {
 
     window.addEventListener("mousemove", onMouseMove, false);
 
-    document.addEventListener("keydown", (event) => {
+
+    const handleKeyDown = (event: KeyboardEvent) => {
       switch (event.code) {
         case "KeyW":
           keyPressRef.current.forward = true;
@@ -98,9 +99,11 @@ const ThreeCanvas = () => {
           keyPressRef.current.right = true;
           break;
       }
-    });
+    }
 
-    document.addEventListener("keyup", (event) => {
+    document.addEventListener("keydown", handleKeyDown);
+
+    const handleKeyUp = (event: KeyboardEvent) => {
       switch (event.code) {
         case "KeyW":
           keyPressRef.current.forward = false;
@@ -115,7 +118,9 @@ const ThreeCanvas = () => {
           keyPressRef.current.right = false;
           break;
       }
-    });
+    }
+
+    document.addEventListener("keyup", handleKeyUp);
 
     let highlightedBlock: THREE.Mesh | null = null;
     const outlineMaterial = new THREE.LineBasicMaterial({ color: 0xffff00 });
@@ -185,17 +190,34 @@ const ThreeCanvas = () => {
 
     animate();
 
-    window.addEventListener("resize", () => {
+    const handleResize = () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+    }
+
+    window.addEventListener("resize", handleResize);
 
     return () => {
+      // Remove event listeners
       window.removeEventListener("mousemove", onMouseMove, false);
-      window.removeEventListener("resize", () => {});
-      document.removeEventListener("keydown", () => {});
-      document.removeEventListener("keyup", () => {});
+      window.removeEventListener("resize", handleResize);
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keyup", handleKeyUp);
+    
+      // Dispose of scene objects and materials to free up memory
+      world.children.forEach((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.geometry.dispose();
+          if (Array.isArray(child.material)) {
+            child.material.forEach((material) => material.dispose());
+          } else {
+            child.material.dispose();
+          }
+        }
+      });
+    
+      // Remove the renderer's DOM element
       if (canvasRef.current) {
         canvasRef.current.removeChild(renderer.domElement);
       }
