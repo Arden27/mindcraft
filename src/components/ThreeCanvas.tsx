@@ -23,6 +23,15 @@ class World extends THREE.Scene {
   }
 }
 
+class Outline extends THREE.LineSegments {
+  isOutline: boolean;
+
+  constructor(geometry: THREE.EdgesGeometry, material: THREE.LineBasicMaterial) {
+    super(geometry, material);
+    this.isOutline = true; // Custom property to identify outlines
+  }
+}
+
 const ThreeCanvas = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [observerCoords, setObserverCoords] = useState({
@@ -114,49 +123,38 @@ const ThreeCanvas = () => {
       new THREE.BoxGeometry(1.02, 1.02, 1.02),
     );
 
+    let lastIntersectedObject: THREE.Mesh | null = null;
+
     const animate = () => {
       requestAnimationFrame(animate);
-
-      // Raycasting to find pointed block
+    
       raycaster.setFromCamera(mouse, camera);
       const intersects = raycaster.intersectObjects(world.children, true);
-      if (intersects.length > 0) {
-        const intersectedObject = intersects[0].object as THREE.Mesh;
-
-        if (highlightedBlock !== intersectedObject) {
-          if (highlightedBlock) {
-            // Remove the outline from the previously highlighted block
-            const previousOutline = highlightedBlock.getObjectByName("outline");
-            if (previousOutline) {
-              highlightedBlock.remove(previousOutline);
-            }
+    
+      // Filter out any outlines from the intersects array
+      const filteredIntersects = intersects.filter(intersect => !(intersect.object instanceof Outline));
+    
+      if (filteredIntersects.length > 0) {
+        const intersectedObject = filteredIntersects[0].object as THREE.Mesh;
+    
+        if (lastIntersectedObject !== intersectedObject) {
+          if (lastIntersectedObject) {
+            removeOutline(lastIntersectedObject);
           }
-
-          // Create an outline for the new intersected object
-          const outline = new THREE.LineSegments(
-            outlineGeometry,
-            outlineMaterial,
-          );
-          outline.name = "outline";
-          intersectedObject.add(outline);
-
-          highlightedBlock = intersectedObject;
+          addOutline(intersectedObject);
+          lastIntersectedObject = intersectedObject;
         }
-
+    
         setBlockCoords({
           x: intersectedObject.position.x.toFixed(2),
           y: intersectedObject.position.y.toFixed(2),
           z: intersectedObject.position.z.toFixed(2),
         });
-      } else if (highlightedBlock) {
-        // Remove the outline if we're not pointing at anything
-        const currentOutline = highlightedBlock.getObjectByName("outline");
-        if (currentOutline) {
-          highlightedBlock.remove(currentOutline);
-        }
-        highlightedBlock = null;
+      } else if (lastIntersectedObject) {
+        removeOutline(lastIntersectedObject);
+        lastIntersectedObject = null;
       }
-
+    
       if (controls.isLocked) {
         const speed = 0.05;
         if (keyPressRef.current.forward) camera.translateZ(-speed);
@@ -164,15 +162,25 @@ const ThreeCanvas = () => {
         if (keyPressRef.current.left) camera.translateX(-speed);
         if (keyPressRef.current.right) camera.translateX(speed);
       }
-
-      // Update observer coordinates
+    
       setObserverCoords({
         x: camera.position.x.toFixed(2),
         y: camera.position.y.toFixed(2),
         z: camera.position.z.toFixed(2),
       });
-
+    
       renderer.render(world, camera);
+    };
+
+    const addOutline = (object: THREE.Mesh) => {
+      const outline = new Outline(outlineGeometry, outlineMaterial);
+      outline.name = "outline";
+      object.add(outline);
+    };
+    
+    const removeOutline = (object: THREE.Mesh) => {
+      const outline = object.getObjectByName("outline");
+      if (outline) object.remove(outline);
     };
 
     animate();
