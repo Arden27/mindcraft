@@ -1,11 +1,15 @@
+"use client"
+
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { PointerLockControls } from "three/addons/controls/PointerLockControls.js";
 
+let WORLD_SIZE = 50
+
 class World extends THREE.Scene {
   constructor() {
     super();
-    const worldGeometry = new THREE.SphereGeometry(500, 64, 64); // large radius for the sphere
+    const worldGeometry = new THREE.SphereGeometry(WORLD_SIZE, 64, 64); // large radius for the sphere
     const worldMaterial = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, wireframe: true });
     const worldSphere = new THREE.Mesh(worldGeometry, worldMaterial);
     this.add(worldSphere);
@@ -18,7 +22,7 @@ const ThreeCanvas = () => {
   useEffect(() => {
     const world = new World();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 501, 0); // Position camera slightly above the sphere
+    camera.position.set(0, WORLD_SIZE + 1, 0); // Position camera slightly above the sphere
 
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -45,7 +49,7 @@ const ThreeCanvas = () => {
         const playerPosition = new THREE.Vector3().copy(camera.position).normalize();
         const upDirection = playerPosition.clone().negate();
         camera.up.copy(upDirection);
-        camera.lookAt(camera.position.clone().add(playerPosition)); // Adjust camera's lookAt
+        // camera.lookAt(camera.position.clone().add(playerPosition)); // Adjust camera's lookAt
       }
 
       renderer.render(world, camera);
