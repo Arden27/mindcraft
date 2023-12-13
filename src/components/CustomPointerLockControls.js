@@ -116,30 +116,36 @@ class CustomPointerLockControls extends EventDispatcher {
 // event listeners
 
 function onMouseMove(event) {
-	if (this.isLocked === false) return;
+  if (this.isLocked === false) return;
 
-	const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
-	const movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+  const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
+  const movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
 
-	const camera = this.camera;
+  const camera = this.camera;
 
-	// Calculate the quaternion for the horizontal rotation (yaw)
-	let quaternionY = new Quaternion();
-	quaternionY.setFromAxisAngle(new Vector3(0, 1, 0), -movementX * 0.002 * this.pointerSpeed);
+  // Calculate the quaternion for the horizontal rotation (yaw)
+  let quaternionY = new Quaternion();
+  quaternionY.setFromAxisAngle(new Vector3(0, 1, 0), -movementX * 0.002 * this.pointerSpeed);
 
-	// Calculate the quaternion for the vertical rotation (pitch)
-	let quaternionX = new Quaternion();
-	quaternionX.setFromAxisAngle(new Vector3(1, 0, 0), -movementY * 0.002 * this.pointerSpeed);
+  // Calculate the quaternion for the vertical rotation (pitch)
+  let quaternionX = new Quaternion();
+  quaternionX.setFromAxisAngle(new Vector3(1, 0, 0), -movementY * 0.002 * this.pointerSpeed);
 
-	// Combine the horizontal and vertical rotations
-	let combinedQuaternion = new Quaternion();
-	combinedQuaternion.multiplyQuaternions(quaternionY, camera.quaternion);
-	combinedQuaternion.multiplyQuaternions(combinedQuaternion, quaternionX);
+  // Check if the camera is below the equator of the sphere
+  let lateralInversionFactor = camera.position.y < 0 ? -1 : 1;
 
-	// Apply the combined rotation to the camera
-	camera.quaternion.copy(combinedQuaternion);
+  // Invert the direction of yaw rotation if the camera is below the equator
+  quaternionY.setFromAxisAngle(new Vector3(0, 1, 0), -lateralInversionFactor * movementX * 0.002 * this.pointerSpeed);
 
-	this.dispatchEvent(_changeEvent);
+  // Combine the horizontal and vertical rotations
+  let combinedQuaternion = new Quaternion();
+  combinedQuaternion.multiplyQuaternions(quaternionY, camera.quaternion);
+  combinedQuaternion.multiplyQuaternions(combinedQuaternion, quaternionX);
+
+  // Apply the combined rotation to the camera
+  camera.quaternion.copy(combinedQuaternion);
+
+  this.dispatchEvent(_changeEvent);
 }
 
 function onPointerlockChange() {

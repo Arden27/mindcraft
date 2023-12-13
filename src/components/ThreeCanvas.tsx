@@ -13,6 +13,9 @@ class World extends THREE.Scene {
     this.createMainSphere();
     this.createEquatorLine();
     this.createSmallSphere();
+    this.createAnotherSphere();
+    this.createOneMoreSphere();
+    this.createWhiteSphere();
   }
 
   createMainSphere() {
@@ -31,10 +34,34 @@ class World extends THREE.Scene {
   }
 
   createSmallSphere() {
-    const smallSphereGeometry = new THREE.SphereGeometry(1, 32, 32);
+    const smallSphereGeometry = new THREE.SphereGeometry(1, 8, 8);
     const smallSphereMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
     const smallSphere = new THREE.Mesh(smallSphereGeometry, smallSphereMaterial);
-    smallSphere.position.set(15, 10, 5); // Position outside the main sphere
+    smallSphere.position.set(0, 10, -20); // Position outside the main sphere
+    this.add(smallSphere);
+  }
+
+  createAnotherSphere() {
+    const smallSphereGeometry = new THREE.SphereGeometry(1, 8, 8);
+    const smallSphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
+    const smallSphere = new THREE.Mesh(smallSphereGeometry, smallSphereMaterial);
+    smallSphere.position.set(0, 0, -20); // Position outside the main sphere
+    this.add(smallSphere);
+  }
+
+  createOneMoreSphere() {
+    const smallSphereGeometry = new THREE.SphereGeometry(1, 8, 8);
+    const smallSphereMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff, wireframe: true });
+    const smallSphere = new THREE.Mesh(smallSphereGeometry, smallSphereMaterial);
+    smallSphere.position.set(0, -10, -20); // Position outside the main sphere
+    this.add(smallSphere);
+  }
+
+  createWhiteSphere() {
+    const smallSphereGeometry = new THREE.SphereGeometry(1, 8, 8);
+    const smallSphereMaterial = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, wireframe: true });
+    const smallSphere = new THREE.Mesh(smallSphereGeometry, smallSphereMaterial);
+    smallSphere.position.set(0, -20, -20); // Position outside the main sphere
     this.add(smallSphere);
   }
 }
