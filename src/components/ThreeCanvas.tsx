@@ -10,13 +10,32 @@ let WORLD_SIZE = 10;
 class World extends THREE.Scene {
   constructor() {
     super();
-    const worldGeometry = new THREE.SphereGeometry(WORLD_SIZE, 64, 64); // large radius for the sphere
-    const worldMaterial = new THREE.MeshBasicMaterial({
-      color: 0xaaaaaa,
-      wireframe: true,
-    });
-    const worldSphere = new THREE.Mesh(worldGeometry, worldMaterial);
-    this.add(worldSphere);
+    this.createMainSphere();
+    this.createEquatorLine();
+    this.createSmallSphere();
+  }
+
+  createMainSphere() {
+    const geometry = new THREE.SphereGeometry(WORLD_SIZE, 16, 16);
+    const material = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, wireframe: true });
+    const sphere = new THREE.Mesh(geometry, material);
+    this.add(sphere);
+  }
+
+  createEquatorLine() {
+    const equatorGeometry = new THREE.CircleGeometry(WORLD_SIZE, 64);
+    equatorGeometry.rotateX(Math.PI / 2); // Orient it to lie in the XY plane
+    const equatorMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+    const equatorLine = new THREE.LineLoop(equatorGeometry, equatorMaterial);
+    this.add(equatorLine);
+  }
+
+  createSmallSphere() {
+    const smallSphereGeometry = new THREE.SphereGeometry(1, 32, 32);
+    const smallSphereMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+    const smallSphere = new THREE.Mesh(smallSphereGeometry, smallSphereMaterial);
+    smallSphere.position.set(15, 10, 5); // Position outside the main sphere
+    this.add(smallSphere);
   }
 }
 
@@ -30,9 +49,13 @@ const ThreeCanvas = () => {
     up: false,
     down: false,
   }).current; // Use ref to ensure synchronous updates
+
+  const cameraPositionRef = useRef({ x: 0, y: 0, z: 0 });
+
   const [cameraPosition, setCameraPosition] = useState({ x: 0, y: 0, z: 0 });
 
   useEffect(() => {
+    let lastUpdateTime = Date.now();
     const world = new World();
     const camera = new THREE.PerspectiveCamera(
       75,
@@ -118,6 +141,13 @@ const ThreeCanvas = () => {
         forwardDirection.normalize();
         rightDirection.crossVectors(camera.up, forwardDirection).normalize();
 
+        // Update camera position reference
+        cameraPositionRef.current = {
+          x: camera.position.x,
+          y: camera.position.y,
+          z: camera.position.z,
+        };
+
         // Project the movement directions onto the tangent plane at the camera's position
         const tangentForward = forwardDirection.sub(
           upDirection.clone().multiplyScalar(forwardDirection.dot(upDirection)),
@@ -132,10 +162,7 @@ const ThreeCanvas = () => {
         if (moveState.backward) {
           camera.position.addScaledVector(tangentForward, -speed);
         }
-        // Determine if the camera is below the equator
-        const isBelowEquator = camera.position.y < 0;
-
-        // Adjust the movement direction based on the camera's position
+        const isBelowEquator = cameraPositionRef.current.y < 0;
         const lateralMovementFactor = isBelowEquator ? -1 : 1;
 
         if (moveState.left) {
@@ -163,11 +190,15 @@ const ThreeCanvas = () => {
         }
       }
 
-      setCameraPosition({
-        x: camera.position.x,
-        y: camera.position.y,
-        z: camera.position.z,
-      });
+      // Throttle state updates
+      if (Date.now() - lastUpdateTime > 200) { // Update every 200 ms
+        setCameraPosition({
+          x: camera.position.x,
+          y: camera.position.y,
+          z: camera.position.z,
+        });
+        lastUpdateTime = Date.now();
+      }
 
       renderer.render(world, camera);
     };
