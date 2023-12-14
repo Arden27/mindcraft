@@ -20,7 +20,10 @@ class World extends THREE.Scene {
 
   createMainSphere() {
     const geometry = new THREE.SphereGeometry(WORLD_SIZE, 16, 16);
-    const material = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, wireframe: true });
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xaaaaaa,
+      wireframe: true,
+    });
     const sphere = new THREE.Mesh(geometry, material);
     this.add(sphere);
   }
@@ -35,32 +38,56 @@ class World extends THREE.Scene {
 
   createSmallSphere() {
     const smallSphereGeometry = new THREE.SphereGeometry(1, 8, 8);
-    const smallSphereMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
-    const smallSphere = new THREE.Mesh(smallSphereGeometry, smallSphereMaterial);
+    const smallSphereMaterial = new THREE.MeshBasicMaterial({
+      color: 0x00ff00,
+      wireframe: true,
+    });
+    const smallSphere = new THREE.Mesh(
+      smallSphereGeometry,
+      smallSphereMaterial,
+    );
     smallSphere.position.set(0, 10, -20); // Position outside the main sphere
     this.add(smallSphere);
   }
 
   createAnotherSphere() {
     const smallSphereGeometry = new THREE.SphereGeometry(1, 8, 8);
-    const smallSphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
-    const smallSphere = new THREE.Mesh(smallSphereGeometry, smallSphereMaterial);
+    const smallSphereMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff0000,
+      wireframe: true,
+    });
+    const smallSphere = new THREE.Mesh(
+      smallSphereGeometry,
+      smallSphereMaterial,
+    );
     smallSphere.position.set(0, 0, -20); // Position outside the main sphere
     this.add(smallSphere);
   }
 
   createOneMoreSphere() {
     const smallSphereGeometry = new THREE.SphereGeometry(1, 8, 8);
-    const smallSphereMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff, wireframe: true });
-    const smallSphere = new THREE.Mesh(smallSphereGeometry, smallSphereMaterial);
+    const smallSphereMaterial = new THREE.MeshBasicMaterial({
+      color: 0x0000ff,
+      wireframe: true,
+    });
+    const smallSphere = new THREE.Mesh(
+      smallSphereGeometry,
+      smallSphereMaterial,
+    );
     smallSphere.position.set(0, -10, -20); // Position outside the main sphere
     this.add(smallSphere);
   }
 
   createWhiteSphere() {
     const smallSphereGeometry = new THREE.SphereGeometry(1, 8, 8);
-    const smallSphereMaterial = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, wireframe: true });
-    const smallSphere = new THREE.Mesh(smallSphereGeometry, smallSphereMaterial);
+    const smallSphereMaterial = new THREE.MeshBasicMaterial({
+      color: 0xaaaaaa,
+      wireframe: true,
+    });
+    const smallSphere = new THREE.Mesh(
+      smallSphereGeometry,
+      smallSphereMaterial,
+    );
     smallSphere.position.set(0, -20, -20); // Position outside the main sphere
     this.add(smallSphere);
   }
@@ -75,11 +102,16 @@ const ThreeCanvas = () => {
     right: false,
     up: false,
     down: false,
+    tiltLeft: false,
+    tiltRight: false,
   }).current; // Use ref to ensure synchronous updates
 
   const cameraPositionRef = useRef({ x: 0, y: 0, z: 0 });
 
   const [cameraPosition, setCameraPosition] = useState({ x: 0, y: 0, z: 0 });
+
+  const MAX_TILT_ANGLE = Math.PI / 4; // 45 degrees in radians
+  let currentTiltAngle = 0; // Track the current tilt angle
 
   useEffect(() => {
     let lastUpdateTime = Date.now();
@@ -124,6 +156,13 @@ const ThreeCanvas = () => {
         case "ControlLeft": // Use "ControlLeft" for left control key
           moveState.down = true;
           break;
+
+        case "KeyQ":
+          moveState.tiltLeft = true;
+          break;
+        case "KeyE":
+          moveState.tiltRight = true;
+          break;
       }
     };
 
@@ -146,6 +185,13 @@ const ThreeCanvas = () => {
           break;
         case "ControlLeft":
           moveState.down = false;
+          break;
+
+        case "KeyQ":
+          moveState.tiltLeft = false;
+          break;
+        case "KeyE":
+          moveState.tiltRight = false;
           break;
       }
     };
@@ -211,6 +257,35 @@ const ThreeCanvas = () => {
           camera.position.setLength(camera.position.length() - verticalSpeed);
         }
 
+        // Adjust the tilt
+        const tiltStep = 0.1;
+        if (moveState.tiltLeft) {
+          if (currentTiltAngle < MAX_TILT_ANGLE) {
+            currentTiltAngle += tiltStep;
+          }
+        } else if (moveState.tiltRight) {
+          if (currentTiltAngle > -MAX_TILT_ANGLE) {
+            currentTiltAngle -= tiltStep;
+          }
+        } else {
+          if (currentTiltAngle < 0) {
+            currentTiltAngle = Math.min(0, currentTiltAngle + tiltStep);
+          } else if (currentTiltAngle > 0) {
+            currentTiltAngle = Math.max(0, currentTiltAngle - tiltStep);
+          }
+        }
+
+        camera.rotation.z = currentTiltAngle;
+
+        // const tiltAngle = 0.1
+        // if (moveState.tiltLeft) {
+        //   camera.rotateOnAxis(new THREE.Vector3(0, 0, 1), tiltAngle);
+        // }
+
+        // if (moveState.tiltRight) {
+        //   camera.rotateOnAxis(new THREE.Vector3(0, 0, 1), -tiltAngle);
+        // }
+
         // Prevent the camera from going below the surface
         if (camera.position.length() < WORLD_SIZE + 1) {
           camera.position.setLength(WORLD_SIZE + 1);
@@ -218,7 +293,8 @@ const ThreeCanvas = () => {
       }
 
       // Throttle state updates
-      if (Date.now() - lastUpdateTime > 200) { // Update every 200 ms
+      if (Date.now() - lastUpdateTime > 200) {
+        // Update every 200 ms
         setCameraPosition({
           x: camera.position.x,
           y: camera.position.y,
