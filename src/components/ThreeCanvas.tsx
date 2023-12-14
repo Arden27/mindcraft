@@ -259,23 +259,31 @@ const ThreeCanvas = () => {
 
         // Adjust the tilt
         const tiltStep = 0.1;
+        let tiltChanged = false;
+
         if (moveState.tiltLeft) {
           if (currentTiltAngle < MAX_TILT_ANGLE) {
             currentTiltAngle += tiltStep;
+            tiltChanged = true;
           }
         } else if (moveState.tiltRight) {
           if (currentTiltAngle > -MAX_TILT_ANGLE) {
             currentTiltAngle -= tiltStep;
+            tiltChanged = true;
           }
         } else {
           if (currentTiltAngle < 0) {
             currentTiltAngle = Math.min(0, currentTiltAngle + tiltStep);
+            tiltChanged = true;
           } else if (currentTiltAngle > 0) {
             currentTiltAngle = Math.max(0, currentTiltAngle - tiltStep);
+            tiltChanged = true;
           }
         }
 
-        camera.rotation.z = currentTiltAngle;
+        if (tiltChanged) {
+          camera.rotation.z = currentTiltAngle;
+        }
 
         // const tiltAngle = 0.1
         // if (moveState.tiltLeft) {
